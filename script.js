@@ -21,6 +21,7 @@
   telegramContact.href = telegramUrl;
   telegramContact.querySelector('span').textContent = `@${telegram} ↗`;
   document.getElementById('telegram-link').href = telegramUrl;
+  document.querySelectorAll('[data-telegram-direct]').forEach(link => { link.href = telegramUrl; });
   const contactLinks = document.getElementById('contact-links');
   const optionalContacts = [
     {label: 'Телефон', value: config.phone, href: value => `tel:${value.replace(/[^\d+]/g, '')}`},
@@ -96,14 +97,38 @@
     });
     galleryItems.forEach(item => { item.hidden = button.dataset.filter !== 'all' && item.dataset.category !== button.dataset.filter; });
   }));
-  galleryItems.forEach(item => item.addEventListener('click', () => {
+  const photoDialog = document.getElementById('photo-dialog');
+  let currentPhoto = null;
+  function visiblePhotos() { return [...galleryItems].filter(item => !item.hidden); }
+  function showPhoto(item) {
+    currentPhoto = item;
     const source = item.querySelector('img');
     const photo = document.getElementById('large-photo');
-    photo.src = source.src;
+    // The modal uses the largest image; thumbnails stay responsive.
+    photo.src = source.src.replace(/-(480|960|1440)\.jpg$/, '-1440.jpg');
     photo.alt = source.alt;
     document.getElementById('photo-caption').textContent = source.alt;
-    openDialog(document.getElementById('photo-dialog'));
+    const visible = visiblePhotos();
+    document.getElementById('photo-counter').textContent = `${visible.indexOf(item) + 1} / ${visible.length}`;
+    ['photo-prev', 'photo-next'].forEach(id => { document.getElementById(id).disabled = visible.length < 2; });
+  }
+  function movePhoto(direction) {
+    const visible = visiblePhotos();
+    if (!visible.length) return;
+    showPhoto(visible[(visible.indexOf(currentPhoto) + direction + visible.length) % visible.length]);
+  }
+  galleryItems.forEach(item => item.addEventListener('click', () => {
+    showPhoto(item);
+    openDialog(photoDialog);
   }));
+  document.getElementById('photo-prev').addEventListener('click', () => movePhoto(-1));
+  document.getElementById('photo-next').addEventListener('click', () => movePhoto(1));
+  photoDialog.addEventListener('keydown', event => {
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+      event.preventDefault();
+      movePhoto(event.key === 'ArrowLeft' ? -1 : 1);
+    }
+  });
   const form = document.getElementById('inquiry-form');
   const nameInput = document.getElementById('name');
   const replyInput = document.getElementById('reply');
@@ -124,6 +149,8 @@
       'Здравствуйте, Pearl & Vow! Хочу обсудить событие.',
       '', `Имя: ${data.get('name').trim()}`, `Контакт для связи: ${data.get('reply').trim()}`,
       `Событие: ${data.get('event')}`, `Желаемая дата: ${formattedDate}`,
+      `Число гостей: ${data.get('guests') || 'Пока не определено'}`,
+      `Ориентир по бюджету: ${data.get('budget').trim() || 'Хотелось бы обсудить'}`,
       '', `Идея и пожелания: ${data.get('message').trim() || 'Хотелось бы обсудить вместе.'}`,
     ].join('\n');
     document.getElementById('copy-status').textContent = '';
