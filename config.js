@@ -1,6 +1,6 @@
 window.PEARL_CONFIG = Object.freeze({
-  telegram: 'lizabacd',
+  telegram: '', // Username без @. Пока пусто: выбор чата в Telegram.
   phone: '',
-  email: '',
-  whatsapp: '',
+  email: 'alext.ya@ya.ru',
+  whatsapp: '', // Номер с кодом страны. Пока пусто: выбор получателя.
 });
