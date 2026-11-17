@@ -1,8 +1,6 @@
 (() => {
   'use strict';
   const config = window.PEARL_CONFIG || {};
-  const telegram = String(config.telegram || 'lizabacd').replace(/^@/, '');
-  const telegramUrl = `https://t.me/${encodeURIComponent(telegram)}`;
   const menuButton = document.querySelector('.menu-toggle');
   const navigation = document.getElementById('navigation');
   function closeMenu() {
@@ -17,26 +15,22 @@
   navigation.querySelectorAll('a').forEach(link => link.addEventListener('click', closeMenu));
   document.addEventListener('keydown', event => { if (event.key === 'Escape') closeMenu(); });
   document.getElementById('year').textContent = new Date().getFullYear();
-  const telegramContact = document.querySelector('[data-contact="telegram"]');
-  telegramContact.href = telegramUrl;
-  telegramContact.querySelector('span').textContent = `@${telegram} ↗`;
-  document.getElementById('telegram-link').href = telegramUrl;
-  document.querySelectorAll('[data-telegram-direct]').forEach(link => { link.href = telegramUrl; });
+  const emailContact = document.querySelector('[data-contact="email"]');
+  const email = String(config.email || '').trim();
+  emailContact.hidden = !email;
+  emailContact.href = `mailto:${encodeURIComponent(email).replace(/%40/gi, '@')}`;
+  emailContact.querySelector('span').textContent = `${email} ↗`;
   const contactLinks = document.getElementById('contact-links');
-  const optionalContacts = [
-    {label: 'Телефон', value: config.phone, href: value => `tel:${value.replace(/[^\d+]/g, '')}`},
-    {label: 'Почта', value: config.email, href: value => `mailto:${encodeURIComponent(value)}`},
-    {label: 'WhatsApp', value: config.whatsapp, href: value => `https://wa.me/${value.replace(/\D/g, '')}`},
-  ];
-  optionalContacts.forEach(contact => {
-    const value = String(contact.value || '').trim();
-    if (!value) return;
+  [
+    {label: 'Telegram', value: String(config.telegram || '').replace(/^@/, ''), href: value => `https://t.me/${encodeURIComponent(value)}`},
+    {label: 'WhatsApp', value: String(config.whatsapp || '').replace(/\D/g, ''), href: value => `https://wa.me/${value}`},
+    {label: 'Телефон', value: String(config.phone || '').trim(), href: value => `tel:${value.replace(/[^\d+]/g, '')}`},
+  ].forEach(contact => {
+    if (!contact.value) return;
     const link = document.createElement('a');
-    link.href = contact.href(value);
-    if (contact.label === 'WhatsApp') { link.target = '_blank'; link.rel = 'noopener noreferrer'; }
-    const detail = document.createElement('span');
-    detail.textContent = `${value} ↗`;
-    link.append(`${contact.label} `, detail);
+    link.href = contact.href(contact.value);
+    link.textContent = `${contact.label}: ${contact.value} ↗`;
+    if (contact.label !== 'Телефон') { link.target = '_blank'; link.rel = 'noopener noreferrer'; }
     contactLinks.append(link);
   });
   function openDialog(dialog) {
@@ -51,43 +45,10 @@
       if (event.target === dialog && (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom)) dialog.close();
     });
   });
-  const services = {
-    proposal: {
-      title: 'Предложение руки и сердца',
-      description: 'Продуманный сюрприз с вашей личной историей в центре. Вместе выберем настроение: камерно и нежно или ярко и неожиданно.',
-      items: ['Обсуждение идеи, даты и бюджета', 'Подбор локации и разработка сценария', 'Визуальная концепция, декор и флористика', 'Подбор фотографа и видеографа при необходимости', 'Координация подготовки и самого сюрприза'],
-      event: 'Предложение руки и сердца',
-    },
-    wedding: {
-      title: 'Свадьба о вас двоих',
-      description: 'Помогаем соединить ваши пожелания в цельное событие: от первого обсуждения до координации свадебного дня.',
-      items: ['Знакомство, определение формата и бюджета', 'Разработка концепции и визуального решения', 'Подбор площадки и команды подрядчиков', 'План подготовки, смета и тайминг дня', 'Координация согласованного сценария'],
-      event: 'Свадьба',
-    },
-    ceremony: {
-      title: 'Венчание с бережным подходом',
-      description: 'Помогаем организовать семейное событие спокойно и последовательно. Требования к самому таинству определяет выбранный храм.',
-      items: ['Обсуждение пожеланий и организационных задач', 'Планирование времени с учётом согласований с храмом', 'Флористика и оформление, допустимые в выбранном месте', 'Подбор фотографа по согласованию', 'Логистика гостей и координация дня'],
-      event: 'Венчание',
-    },
-  };
-  const serviceDialog = document.getElementById('service-dialog');
-  document.querySelectorAll('[data-service]').forEach(button => {
-    button.addEventListener('click', () => {
-      const service = services[button.dataset.service];
-      document.getElementById('service-title').textContent = service.title;
-      serviceDialog.setAttribute('aria-labelledby', 'service-title');
-      document.getElementById('service-description').textContent = service.description;
-      const list = document.getElementById('service-list');
-      list.replaceChildren(...service.items.map(item => { const li = document.createElement('li'); li.textContent = item; return li; }));
-      document.getElementById('service-contact').dataset.event = service.event;
-      openDialog(serviceDialog);
-    });
-  });
-  document.querySelectorAll('[data-event], #service-contact').forEach(link => link.addEventListener('click', () => {
+  document.querySelectorAll('[data-event]').forEach(link => link.addEventListener('click', () => {
     document.getElementById('event').value = link.dataset.event;
-    if (serviceDialog.open) serviceDialog.close();
   }));
+  if (document.getElementById('photo-dialog')) {
   const galleryItems = document.querySelectorAll('.gallery-item');
   document.querySelectorAll('[data-filter]').forEach(button => button.addEventListener('click', () => {
     document.querySelectorAll('[data-filter]').forEach(filter => {
@@ -129,6 +90,7 @@
       movePhoto(event.key === 'ArrowLeft' ? -1 : 1);
     }
   });
+  }
   const form = document.getElementById('inquiry-form');
   const nameInput = document.getElementById('name');
   const replyInput = document.getElementById('reply');
@@ -138,34 +100,55 @@
   const dateInput = document.getElementById('date');
   const today = new Date();
   dateInput.min = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const draft = document.getElementById('message-draft');
+  const messageDialog = document.getElementById('message-dialog');
+  function refreshMessageLinks() {
+    const links = window.PEARL_MESSAGES.links(config, draft.value, document.getElementById('event').value);
+    for (const channel of ['email', 'whatsapp']) document.getElementById(`${channel}-link`).href = links[channel];
+    document.getElementById('telegram-link').href = links.telegramWeb;
+    document.getElementById('telegram-app-link').href = links.telegramApp;
+    return links;
+  }
+  function handoffStatus(channel) {
+    if (channel === 'telegram') return 'Откроется Telegram Web без установки приложения. Если потребуется, войдите в аккаунт. Выберите получателя, проверьте текст и подтвердите отправку. Если после входа текст не появился, нажмите «Telegram в браузере» ещё раз.';
+    const recipientMissing = (channel === 'telegram' && !String(config.telegram || '').trim()) || (channel === 'whatsapp' && !String(config.whatsapp || '').trim());
+    return `Черновик подготовлен. ${recipientMissing ? 'Адресат не настроен — выберите получателя в приложении. ' : ''}Проверьте текст и подтвердите отправку в приложении. Сайт не получает подтверждение отправки.`;
+  }
+  draft.addEventListener('input', () => {
+    refreshMessageLinks();
+    document.getElementById('copy-status').textContent = '';
+  });
+  document.querySelectorAll('[data-message-channel]').forEach(link => link.addEventListener('click', () => {
+    refreshMessageLinks();
+    document.getElementById('handoff-status').textContent = handoffStatus(link.dataset.messageChannel);
+  }));
   form.addEventListener('submit', event => {
     event.preventDefault();
     [nameInput, replyInput].forEach(input => input.setCustomValidity(input.value.trim() ? '' : 'Пожалуйста, заполните это поле.'));
     if (!form.reportValidity()) return;
-    const data = new FormData(form);
-    const date = data.get('date');
-    const formattedDate = date ? new Intl.DateTimeFormat('ru-RU', {day:'numeric', month:'long', year:'numeric'}).format(new Date(`${date}T12:00:00`)) : 'Пока не определена';
-    document.getElementById('message-draft').value = [
-      'Здравствуйте, Pearl & Vow! Хочу обсудить событие.',
-      '', `Имя: ${data.get('name').trim()}`, `Контакт для связи: ${data.get('reply').trim()}`,
-      `Событие: ${data.get('event')}`, `Желаемая дата: ${formattedDate}`,
-      `Число гостей: ${data.get('guests') || 'Пока не определено'}`,
-      `Ориентир по бюджету: ${data.get('budget').trim() || 'Хотелось бы обсудить'}`,
-      '', `Идея и пожелания: ${data.get('message').trim() || 'Хотелось бы обсудить вместе.'}`,
-    ].join('\n');
+    draft.value = window.PEARL_MESSAGES.build(new FormData(form), window.PEARL_ESTIMATE);
+    const links = refreshMessageLinks();
+    const channel = event.submitter?.value || 'preview';
     document.getElementById('copy-status').textContent = '';
-    document.getElementById('form-status').textContent = 'Текст подготовлен. Отправьте его в Telegram, чтобы агентство получило обращение.';
-    openDialog(document.getElementById('message-dialog'));
+    document.getElementById('handoff-status').textContent = channel === 'preview' ? 'Сообщение ещё не отправлено. Выберите способ связи.' : handoffStatus(channel);
+    document.getElementById('form-status').textContent = channel === 'preview' ? 'Текст подготовлен. Выберите способ связи в открывшемся окне.' : handoffStatus(channel);
+    openDialog(messageDialog);
+    if (['email', 'telegram', 'whatsapp'].includes(channel)) {
+      // Synchronous navigation keeps the user gesture for external app handlers.
+      const mobile = navigator.userAgentData?.mobile ?? /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+      const target = channel === 'telegram' && mobile ? 'telegram-app-link' : `${channel}-link`;
+      document.getElementById(target).click();
+    }
   });
   document.getElementById('copy-message').addEventListener('click', async () => {
     const draft = document.getElementById('message-draft');
     const status = document.getElementById('copy-status');
     try {
       await navigator.clipboard.writeText(draft.value);
-      status.textContent = 'Скопировано. Откройте Telegram, вставьте текст в чат и отправьте его.';
+      status.textContent = 'Скопировано. Вставьте текст в выбранном приложении и подтвердите отправку.';
     } catch {
       draft.focus(); draft.select();
-      status.textContent = 'Скопируйте выделенный текст вручную, затем откройте Telegram и отправьте его в чат.';
+      status.textContent = 'Скопируйте выделенный текст вручную и вставьте его в выбранном приложении.';
     }
   });
 })();
