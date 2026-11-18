@@ -92,6 +92,7 @@
   });
   }
   const form = document.getElementById('inquiry-form');
+  if (!form) return;
   const nameInput = document.getElementById('name');
   const replyInput = document.getElementById('reply');
   [nameInput, replyInput].forEach(input => input.addEventListener('input', () => {
